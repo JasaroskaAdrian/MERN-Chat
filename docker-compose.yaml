@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  mariadb:
+    image: mariadb:11.1.2
+    command: "--default-authentication-plugin=mysql_native_password"
+    volumes:
+      - m321_project_mariadb:/var/lib/mysql
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=supersecret123
+      - MYSQL_DATABASE=mychat
+      - MYSQL_USER=mychat
+      - MYSQL_PASSWORD=mychatpassword
+    ports:
+      - 3306:3306
+    networks:
+      - app_network
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    depends_on:
+      - mariadb
+    restart: always
+    environment:
+      - PMA_HOST=mariadb
+      - PMA_PORT=3306
+      - MYSQL_ROOT_PASSWORD=supersecret123
+    ports:
+      - "9200:80"
+    networks:
+      - app_network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - mariadb
+    ports:
+      - "4200:4200" # Map Vite's dev server to the host
+    environment:
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - DB_USER=mychat
+      - DB_PASSWORD=mychatpassword
+      - DB_NAME=mychat
+
+      - JWT_SECRET=supersecretkey
+      - HOST=0.0.0.0 # Ensures the app binds to all interfaces
+    networks:
+      - app_network
+
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./prometheus.yaml:/etc/prometheus/prometheus.yaml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yaml'
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3010:3000"
+    volumes:
+      - ./grafana:/etc/grafana/provisioning/datasources
+    restart: always
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=supersecret123
+volumes:
+  m321_project_mariadb:
+
+networks:
+  app_network:
