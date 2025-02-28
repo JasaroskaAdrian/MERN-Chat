@@ -1,9 +1,8 @@
-import Link from "next/link";
 
 export default function Home() {
   return (
     <main className="myBackgroundImage">
-      <Link href="/login" className="myLink">MERN</Link>
+      <h1>Login</h1>
     </main>
     
   );
